@@ -672,18 +672,37 @@ main { position: relative; z-index: 1; }
     enlaces[a.dataset.enlace] = a;
   });
 
+  var orden = ['sobre-mi', 'galeria', 'contacto'];
+  var enFranja = {};          // secciones que cruzan la franja central
+  var contactoVisible = false;
+
+  function pintar() {
+    var activa = contactoVisible ? 'contacto'
+               : orden.filter(function (id) { return enFranja[id]; })[0];
+    if (!activa) return;
+    for (var k in enlaces) { enlaces[k].classList.remove('activo'); }
+    if (enlaces[activa]) { enlaces[activa].classList.add('activo'); }
+  }
+
   var observador = new IntersectionObserver(function (entradas) {
-    entradas.forEach(function (e) {
-      if (!e.isIntersecting) return;
-      for (var k in enlaces) { enlaces[k].classList.remove('activo'); }
-      if (enlaces[e.target.id]) { enlaces[e.target.id].classList.add('activo'); }
-    });
+    entradas.forEach(function (e) { enFranja[e.target.id] = e.isIntersecting; });
+    pintar();
   }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
 
-  ['sobre-mi', 'galeria', 'contacto'].forEach(function (id) {
+  orden.forEach(function (id) {
     var s = document.getElementById(id);
     if (s) { observador.observe(s); }
   });
+
+  // Contacto es corto y esta al final: nunca sube hasta la franja central.
+  // Se marca en cuanto se ve el 60 % de la seccion.
+  var contacto = document.getElementById('contacto');
+  if (contacto) {
+    new IntersectionObserver(function (entradas) {
+      contactoVisible = entradas[0].isIntersecting;
+      pintar();
+    }, { threshold: 0.6 }).observe(contacto);
+  }
 })();
 
 
