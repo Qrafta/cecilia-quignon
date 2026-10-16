@@ -343,8 +343,8 @@ img { max-width: 100%; display: block; }
 .cometa {
   flex: none;
   width: var(--tam-cometa);
-  margin-right: -6px;
-  transform: translateY(-38%) rotate(-16deg);
+  margin-right: -4px;
+  transform: translateY(-34%) rotate(-12deg);
 }
 
 .cometa svg,
@@ -370,7 +370,7 @@ img { max-width: 100%; display: block; }
 
 .final-cometa {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-end;   /* el JS lo pasa a la izquierda si la cuerda llega por ahi */
   padding-top: clamp(28px, 8vw, 48px);
 }
 
@@ -600,7 +600,6 @@ img { max-width: 100%; display: block; }
     <svg class="cuerda" aria-hidden="true" focusable="false"><path d=""/></svg>
 
     <div class="separador">
-      <span class="puntos" aria-hidden="true"></span>
       <span class="cometa" aria-hidden="true">
         <svg viewBox="0 0 40 52">
           <path class="cola" d="M20 42c-5 3 5 5 0 8"/>
@@ -611,6 +610,7 @@ img { max-width: 100%; display: block; }
           <circle class="nudo" cx="20" cy="16" r=".5"/>
         </svg>
       </span>
+      <span class="puntos" aria-hidden="true"></span>
       <h2>Galería</h2>
       <span class="puntos" aria-hidden="true"></span>
     </div>
@@ -1024,10 +1024,12 @@ img { max-width: 100%; display: block; }
 
 /* ============================================================
    D. Cuerda de la cometa
-   Sale de la cometa de "Galeria", baja por un margen y en cada
-   hueco entre grupos (.malla) cruza al otro lado haciendo bucles,
-   hasta la mano del nino del final. Se recalcula si cambia el
-   tamano de la pagina, porque los grupos caen en otro sitio.
+   Sigue el boceto de Argi: sale de la cometa (esquina de
+   "Galeria"), cruza por encima del primer grupo llena de rizos,
+   rodea el grupo por un lado con una curva grande, vuelve a
+   cruzar por debajo, rodea el siguiente por el otro lado... y al
+   final llega a la mano del nino. Cada cruce lleva rizos o
+   festones (arcos). Se recalcula si cambia el tamano de pagina.
    ============================================================ */
 (function () {
   var seccion = document.getElementById('galeria');
@@ -1035,53 +1037,73 @@ img { max-width: 100%; display: block; }
   var trazo = seccion.querySelector('.cuerda path');
   var nudo  = seccion.querySelector('.cometa .nudo');
   var mano  = seccion.querySelector('.nino .mano');
-  if (!trazo || !nudo || !mano) return;
+  var final = seccion.querySelector('.final-cometa');
+  if (!trazo || !nudo || !mano || !final) return;
 
-  // vueltas que da la cuerda en cada hueco (se repite si hay mas huecos)
-  var VUELTAS = [1, 2, 3, 2, 1];
-  // donde caen los bucles dentro de cada hueco (0 = un lado, 1 = el otro)
-  var SITIO   = [0.55, 0.45, 0.5, 0.6, 0.4];
+  // adorno de cada cruce, en orden (se repite si hay mas cruces)
+  var ADORNOS = ['rizos', 'rizos', 'festones', 'festones', 'rizos', 'festones', 'mixto'];
+  var RIZO_RADIO = 7.5, RIZO_PASO = 23;     // px
+  var FESTON_ALTO = 9,  FESTON_ANCHO = 34;  // px
 
-  function punto(el, base) {
+  function centro(el, base) {
     var r = el.getBoundingClientRect();
     return { x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top };
   }
 
-  // bajada por un lateral, con una ondulacion suave
-  function bajar(pts, x, y1, y2) {
-    var tramos = Math.max(1, Math.round((y2 - y1) / 90));
-    for (var i = 1; i <= tramos; i++) {
-      pts.push({ x: x + (i % 2 ? 3 : -3), y: y1 + (y2 - y1) * i / tramos });
+  // curva Bezier cubica muestreada en puntos
+  function bezier(pts, a, b, c, d, n) {
+    for (var i = 1; i <= n; i++) {
+      var t = i / n, u = 1 - t;
+      pts.push({ x: u*u*u*a.x + 3*u*u*t*b.x + 3*u*t*t*c.x + t*t*t*d.x,
+                 y: u*u*u*a.y + 3*u*u*t*b.y + 3*u*t*t*c.y + t*t*t*d.y });
     }
   }
 
-  // cruce de lado a lado con bucles (curva trocoide: un muelle estirado)
-  function cruzar(pts, xa, xb, y, radio, vueltas, sitio) {
-    var dir = xb > xa ? 1 : -1;
-    var ancho = radio * 1.4 * vueltas;
-    var ini = xa + (xb - xa) * sitio - dir * ancho / 2;
-    pts.push({ x: (xa + ini) / 2, y: y + 4 });
-    var avance = ancho / (vueltas * 2 * Math.PI);
-    var n = vueltas * 28;
-    for (var i = 0; i <= n; i++) {
-      var t = i / n * vueltas * 2 * Math.PI;
-      pts.push({ x: ini + dir * (avance * t - radio * Math.sin(t)),
-                 y: y - radio * (1 - Math.cos(t)) });
+  // ondulacion suave, para que no parezca hecha con regla
+  function onda(x) { return 2.5 * Math.sin(x / 47); }
+
+  // tramo horizontal con rizos (bucles pequenos) entre xa y xb
+  function rizos(pts, xa, xb, y) {
+    var dir = xb > xa ? 1 : -1, largo = Math.abs(xb - xa);
+    var n = Math.max(1, Math.floor(largo / RIZO_PASO));
+    var v = largo / (n * 2 * Math.PI);           // avance por radian
+    var total = n * 2 * Math.PI, pasos = n * 22;
+    for (var i = 1; i <= pasos; i++) {
+      var t = i / pasos * total;
+      var x = xa + dir * (v * t - RIZO_RADIO * Math.sin(t));
+      pts.push({ x: x, y: y + onda(x) - RIZO_RADIO * (1 - Math.cos(t)) });
     }
-    pts.push({ x: (ini + dir * ancho + xb) / 2, y: y + 4 });
-    pts.push({ x: xb, y: y });
   }
 
-  // une los puntos con curvas suaves (Catmull-Rom -> Bezier)
-  function curva(p) {
-    var d = 'M' + p[0].x.toFixed(1) + ' ' + p[0].y.toFixed(1);
-    for (var i = 0; i < p.length - 1; i++) {
-      var a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c;
-      d += 'C' + (b.x + (c.x - a.x) / 6).toFixed(1) + ' ' + (b.y + (c.y - a.y) / 6).toFixed(1) +
-           ' ' + (c.x - (e.x - b.x) / 6).toFixed(1) + ' ' + (c.y - (e.y - b.y) / 6).toFixed(1) +
-           ' ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1);
+  // tramo horizontal con festones (arcos hacia arriba)
+  function festones(pts, xa, xb, y) {
+    var dir = xb > xa ? 1 : -1, largo = Math.abs(xb - xa);
+    var n = Math.max(1, Math.round(largo / FESTON_ANCHO)), w = largo / n;
+    for (var k = 0; k < n; k++) {
+      for (var j = 1; j <= 14; j++) {
+        var u = j / 14, x = xa + dir * (k + u) * w;
+        pts.push({ x: x, y: y + onda(x) - FESTON_ALTO * Math.sin(Math.PI * u) });
+      }
     }
-    return d;
+  }
+
+  function adornar(pts, tipo, xa, xb, y) {
+    if (tipo === 'mixto') {
+      var mitad = (xa + xb) / 2;
+      rizos(pts, xa, mitad, y);
+      festones(pts, mitad, xb, y);
+    } else if (tipo === 'festones') {
+      festones(pts, xa, xb, y);
+    } else {
+      rizos(pts, xa, xb, y);
+    }
+  }
+
+  // curva grande que rodea un grupo por un lado: de (x, y1) a (x, y2)
+  // llegando hasta el carril x = carril
+  function rodear(pts, x, y1, y2, carril) {
+    var c = x + (carril - x) / 0.75;   // asi la curva toca justo el carril
+    bezier(pts, { x: x, y: y1 }, { x: c, y: y1 }, { x: c, y: y2 }, { x: x, y: y2 }, 48);
   }
 
   function dibujar() {
@@ -1089,47 +1111,56 @@ img { max-width: 100%; display: block; }
     var estilo = getComputedStyle(seccion);
     var izq = parseFloat(estilo.paddingLeft);
     var der = base.width - parseFloat(estilo.paddingRight);
-    // carril por el que baja la cuerda: dentro del margen, o algo mas
-    // fuera si la pantalla es ancha y hay sitio
-    var aire = Math.max(9, Math.min((base.left + izq) / 2, 48));
-    var lado = [izq - aire, der + aire];
-
-    var inicio = punto(nudo, base);
-    var fin = punto(mano, base);
     var grupos = seccion.querySelectorAll('.galeria');
     var huecos = seccion.querySelectorAll('.malla');
-    if (!grupos.length) return;
+    var cabecera = seccion.querySelector('.separador');
+    if (!grupos.length || !cabecera) return;
+
+    // carriles de las curvas: dentro del margen, o algo mas fuera si hay sitio
+    var aire = Math.max(9, Math.min((base.left + izq) / 2, 48));
+    var carril = [izq - aire, der + aire];
+    var meter = Math.min(46, (der - izq) * 0.09);   // donde empiezan/acaban los cruces
+    var borde = [izq + meter, der - meter];
+
+    // alturas de los cruces: encima del primer grupo, cada hueco, y el final
+    var alturas = [];
+    var cab = cabecera.getBoundingClientRect(), g0 = grupos[0].getBoundingClientRect();
+    alturas.push((cab.bottom + g0.top) / 2 - base.top);
+    huecos.forEach(function (h) { alturas.push(centro(h, base).y); });
+
+    // el nino se pone en el lado por el que acaba llegando la cuerda
+    // (los cruces pares van de izquierda a derecha; el del nino es el siguiente)
+    var llegaPorDerecha = alturas.length % 2 === 0;
+    final.style.justifyContent = llegaPorDerecha ? 'flex-end' : 'flex-start';
+
+    var inicio = centro(nudo, base), fin = centro(mano, base);
+    alturas.push(fin.y);
 
     var pts = [inicio];
-    var y0 = grupos[0].getBoundingClientRect().top - base.top - 14;
-    pts.push({ x: (inicio.x + lado[0]) / 2, y: (inicio.y + y0) / 2 + 6 });
-    pts.push({ x: lado[0], y: y0 });
-    var aqui = 0, y = y0;
+    // de la cometa baja al primer cruce
+    bezier(pts, inicio, { x: inicio.x, y: alturas[0] },
+           { x: inicio.x + 10, y: alturas[0] }, { x: borde[0], y: alturas[0] }, 24);
 
-    huecos.forEach(function (h, i) {
-      var r = h.getBoundingClientRect();
-      var radio = Math.min(r.height * 0.3, 30);
-      var linea = r.top - base.top + r.height / 2 + radio;
-      bajar(pts, lado[aqui], y, linea);
-      cruzar(pts, lado[aqui], lado[1 - aqui], linea, radio,
-             VUELTAS[i % VUELTAS.length], SITIO[i % SITIO.length]);
-      aqui = 1 - aqui;
-      y = linea;
-    });
-
-    var yFinal = fin.y - 34;
-    if (aqui === 0) {
-      // si acaba en el lado izquierdo, cruza por debajo del ultimo grupo
-      bajar(pts, lado[0], y, yFinal);
-      pts.push({ x: (lado[0] + lado[1]) / 2, y: yFinal + 10 });
-      pts.push({ x: lado[1], y: yFinal });
-    } else {
-      bajar(pts, lado[1], y, yFinal);
+    for (var i = 0; i < alturas.length; i++) {
+      var y = alturas[i];
+      var desde = i % 2 === 0 ? borde[0] : borde[1];
+      var hasta = i % 2 === 0 ? borde[1] : borde[0];
+      var ultimo = i === alturas.length - 1;
+      if (ultimo) { hasta = fin.x - (llegaPorDerecha ? 26 : -26); }
+      adornar(pts, ADORNOS[i % ADORNOS.length], desde, hasta, y);
+      if (ultimo) {
+        bezier(pts, pts[pts.length - 1], { x: (hasta + fin.x) / 2, y: y },
+               { x: fin.x, y: (y + fin.y) / 2 }, fin, 12);
+      } else {
+        rodear(pts, hasta, y, alturas[i + 1], i % 2 === 0 ? carril[1] : carril[0]);
+      }
     }
-    pts.push({ x: (lado[1] + fin.x) / 2 + 4, y: (yFinal + fin.y) / 2 });
-    pts.push(fin);
 
-    trazo.setAttribute('d', curva(pts));
+    var d = 'M' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
+    for (var k = 1; k < pts.length; k++) {
+      d += 'L' + pts[k].x.toFixed(1) + ' ' + pts[k].y.toFixed(1);
+    }
+    trazo.setAttribute('d', d);
   }
 
   var pendiente = false;
