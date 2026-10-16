@@ -97,7 +97,10 @@
 
   /* Separadores de puntos */
   --color-puntos:           #9b968e;
-  --color-rayuela:          var(--color-titulo);   /* rayuelas entre grupos */
+  /* Flotador entre grupos (azul celeste) */
+  --color-flotador:         #9ad8f2;
+  --color-flotador-sombra:  #6fbfe3;   /* pared interior del agujero */
+  --color-flotador-borde:   #3f8fbf;
   --tam-punto:              2px;    /* grosor del punto        */
   --separacion-puntos:      9px;    /* distancia entre puntos  */
 
@@ -114,8 +117,8 @@
   --alto-mosaico:     75px;    /* alto de partida de cada fila del mosaico */
   --alto-max-obra:    200px;   /* tope: grupos de 1-2 obras no salen enormes */
   --hueco-mosaico:    14px;    /* separacion entre obras */
-  --aire-malla:       clamp(22px, 6vw, 36px);    /* aire encima y debajo de cada rayuela */
-  --tam-rayuela:      40px;    /* alto de la rayuela entre grupos */
+  --aire-malla:       clamp(22px, 6vw, 36px);    /* aire encima y debajo de cada flotador */
+  --tam-flotador:     64px;    /* ancho del flotador entre grupos */
   --alto-barra:       52px;
 }
 
@@ -302,7 +305,7 @@ img { max-width: 100%; display: block; }
   gap: calc(var(--hueco-mosaico) * 1.6) var(--hueco-mosaico);
 }
 
-/* malla: hueco entre grupos con una rayuela pequena en medio */
+/* malla: hueco entre grupos con un flotador pequeno en medio */
 .malla {
   padding: var(--aire-malla) 0;
   display: flex;
@@ -311,13 +314,17 @@ img { max-width: 100%; display: block; }
 
 .malla svg {
   display: block;
-  width: calc(var(--tam-rayuela) * 0.524);   /* proporcion del dibujo: 22 x 42 */
-  height: var(--tam-rayuela);
+  width: var(--tam-flotador);
+  height: calc(var(--tam-flotador) * 0.667);   /* proporcion del dibujo: 60 x 40 */
   fill: none;
-  stroke: var(--color-rayuela);
+  stroke: var(--color-flotador-borde);
   stroke-width: 1.1;
+  stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* los colores de dentro del flotador van en style="" en el propio <symbol>:
+   el CSS no llega dentro de un <use>, pero las variables si se heredan */
 
 .obra {
   --r: 1;
@@ -494,7 +501,7 @@ img { max-width: 100%; display: block; }
   :root {
     --alto-mosaico:  165px;
     --alto-max-obra: 300px;
-    --tam-rayuela:   48px;
+    --tam-flotador:  76px;
     --hueco-mosaico: 26px;
   }
 }
@@ -545,12 +552,16 @@ img { max-width: 100%; display: block; }
          mover un bloque <figure>: el mosaico se recoloca solo. Al anadir
          una, poner en style="--r: ..." el ancho/alto de su foto.
          Cada <div class="galeria"> es un grupo de obras que siempre se ven
-         juntas; entre grupo y grupo va una <div class="malla"> con una rayuela
-         pequena en medio (el <symbol id="rayuela">). -->
-    <!-- Rayuela de las mallas: se define una vez y se usa con <use> -->
+         juntas; entre grupo y grupo va una <div class="malla"> con un flotador
+         pequeno en medio (el <symbol id="flotador">). -->
+    <!-- Flotador de las mallas: se define una vez y se usa con <use> -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-      <symbol id="rayuela" viewBox="-1 -1 22 42">
-        <path d="M5 0h10v10H5zM0 10h20v10H0zM10 10v10M5 20h10v10H5zM5 30h10v10H5z"/>
+      <symbol id="flotador" viewBox="0 0 60 40">
+        <path class="aro" style="fill: var(--color-flotador)" fill-rule="evenodd" d="M2 20a28 16 0 1 0 56 0a28 16 0 1 0-56 0zM18.5 17.5a11.5 6 0 1 0 23 0a11.5 6 0 1 0-23 0z"/>
+        <ellipse class="pared" style="fill: var(--color-flotador-sombra)" cx="30" cy="17.5" rx="11.5" ry="6"/>
+        <ellipse class="hueco" style="fill: var(--color-fondo)" cx="30" cy="19.3" rx="9.3" ry="4.2"/>
+        <path class="gajos" style="stroke-width: .9" d="M16.9 5.9Q19.7 10.3 24.6 12.2M43.1 5.9Q38.3 7.8 35.4 12.2M57.7 22.2Q49.9 18.7 41.4 18.3M43.1 34.1Q40.6 27.6 35.4 22.8M16.9 34.1Q22.0 29.4 24.6 22.8M2.3 22.2Q10.8 21.8 18.6 18.3"/>
+        <path class="brillo" style="stroke: #fff; stroke-width: 1.4" d="M9 14.5c2-3 5.5-5.3 9.5-6.6M47 30.5c-1.6.8-3.3 1.4-5 1.9"/>
       </symbol>
     </svg>
 
@@ -588,7 +599,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#flotador"/></svg></div>
 
     <div class="galeria">
 
@@ -634,7 +645,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#flotador"/></svg></div>
 
     <div class="galeria">
 
@@ -670,7 +681,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#flotador"/></svg></div>
 
     <div class="galeria">
 
@@ -686,7 +697,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#flotador"/></svg></div>
 
     <div class="galeria">
 
@@ -712,7 +723,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#flotador"/></svg></div>
 
     <div class="galeria">
 
