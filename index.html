@@ -419,6 +419,23 @@ img { max-width: 100%; display: block; }
   color: var(--color-texto-suave);
 }
 
+/* credito de la web: mas pequeno y tenue que el copyright, sin subrayado */
+.credito {
+  margin: 10px 0 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  opacity: .55;
+}
+
+.contacto .credito a {
+  color: var(--color-texto-suave);
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.contacto .credito a:hover,
+.contacto .credito a:focus-visible { text-decoration: underline; }
+
 
 /* ============================================================
    8. LIGHTBOX (ampliacion de la obra en la misma pagina)
@@ -821,6 +838,11 @@ img { max-width: 100%; display: block; }
       <p class="copyright">
         © <span id="anio-actual">2026</span> Cecilia Quignón.
         Todos los derechos reservados.
+      </p>
+
+      <!-- Credito de quien hizo la web: lo mas discreto posible -->
+      <p class="credito">
+        <a href="https://www.instagram.com/qrafta.studio/" target="_blank" rel="noopener noreferrer">web @qrafta.studio</a>
       </p>
     </div>
   </section>
