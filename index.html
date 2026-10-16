@@ -110,7 +110,8 @@
   /* --- Medidas ----------------------------------------------------- */
   --ancho-maximo:     980px;   /* ancho maximo del contenido en pantalla grande */
   --margen-lateral:   22px;    /* aire a izquierda y derecha */
-  --ancho-obra:       60%;     /* ancho de cada obra en movil (pedido: 55-65 %) */
+  --alto-mosaico:     105px;   /* alto aproximado de cada fila del mosaico */
+  --hueco-mosaico:    14px;    /* separacion entre obras */
   --alto-barra:       52px;
 }
 
@@ -279,25 +280,36 @@ img { max-width: 100%; display: block; }
 
 
 /* ============================================================
-   6. GALERIA (zigzag)
+   6. GALERIA (mosaico de filas justificadas)
+   ------------------------------------------------------------
+   Cada fila tiene la misma altura y cada obra conserva su
+   proporcion real (sin recortar). El orden se lee de izquierda a
+   derecha y de arriba abajo, igual que en el HTML.
+   Cada <figure> lleva style="--r: ancho/alto" de su foto: es lo
+   que reparte el ancho de la fila. Alto de fila y separacion, en
+   --alto-mosaico y --hueco-mosaico.
    ============================================================ */
 .galeria {
   display: flex;
-  flex-direction: column;
-  gap: clamp(40px, 13vw, 70px);
+  flex-wrap: wrap;
+  gap: calc(var(--hueco-mosaico) * 1.6) var(--hueco-mosaico);
+}
+
+/* hueco invisible al final: la ultima fila no se estira de mas */
+.galeria::after {
+  content: "";
+  flex-grow: 999;
 }
 
 .obra {
-  width: var(--ancho-obra);
+  --r: 1;
+  flex: var(--r) 1 calc(var(--r) * var(--alto-mosaico));
+  min-width: 0;
   margin: 0;
   text-align: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-
-/* zigzag: impares a la izquierda, pares a la derecha */
-.obra:nth-child(odd)  { align-self: flex-start; }
-.obra:nth-child(even) { align-self: flex-end; }
 
 /* marco de la obra */
 .obra .marco {
@@ -332,12 +344,12 @@ img { max-width: 100%; display: block; }
 }
 
 .obra figcaption {
-  margin-top: 12px;
+  margin-top: 6px;
   font-family: var(--fuente-obra);
   font-style: italic;
   font-weight: 500;
-  font-size: 1.1rem;
-  line-height: 1.4;
+  font-size: clamp(0.95rem, 2.6vw, 1.1rem);
+  line-height: 1.25;
 }
 
 .obra .anio {
@@ -461,7 +473,8 @@ img { max-width: 100%; display: block; }
    ============================================================ */
 @media (min-width: 720px) {
   :root {
-    --ancho-obra: 38%;
+    --alto-mosaico:  165px;
+    --hueco-mosaico: 26px;
   }
 }
 </style>
@@ -507,21 +520,22 @@ img { max-width: 100%; display: block; }
          PENDIENTE titulo, ano, tecnica y precio (los manda Cecilia).
          Cuando lleguen: cambiar el "Rellenar" del figcaption, rellenar
          data-anio y data-tecnica, y poner el titulo en el alt de la imagen.
-         Para anadir o quitar obras basta con copiar o borrar un bloque
-         <figure>: el zigzag se recoloca solo. -->
+         Para anadir, quitar o mover obras basta con copiar, borrar o
+         mover un bloque <figure>: el mosaico se recoloca solo. Al anadir
+         una, poner en style="--r: ..." el ancho/alto de su foto. -->
     <div class="galeria">
 
-      <figure class="obra" role="button" tabindex="0"
-              data-img="imagenes/obra-01.webp"
-              data-titulo="Rellenar" data-anio="" data-tecnica="">
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.346"
+              data-img="imagenes/yaaaa.webp"
+              data-titulo="Yaaaa" data-anio="" data-tecnica="">
         <div class="marco">
-          <img src="imagenes/obra-01.webp" alt="Obra de Cecilia Quignón"
+          <img src="imagenes/yaaaa.webp" alt="Obra de Cecilia Quignón"
                width="1400" height="1040" decoding="async">
         </div>
-        <figcaption>Rellenar</figcaption>
+        <figcaption>Yaaaa</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.719"
               data-img="imagenes/mas-alto.webp"
               data-titulo="Mas alto!" data-anio="" data-tecnica="">
         <div class="marco">
@@ -531,7 +545,7 @@ img { max-width: 100%; display: block; }
         <figcaption>Mas alto!</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.750"
               data-img="imagenes/refugio.webp"
               data-titulo="Refugio" data-anio="" data-tecnica="">
         <div class="marco">
@@ -541,17 +555,17 @@ img { max-width: 100%; display: block; }
         <figcaption>Refugio</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
-              data-img="imagenes/obra-04.webp"
-              data-titulo="Rellenar" data-anio="" data-tecnica="">
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.832"
+              data-img="imagenes/mecanicos.webp"
+              data-titulo="Mecanicos" data-anio="" data-tecnica="">
         <div class="marco">
-          <img src="imagenes/obra-04.webp" alt="Obra de Cecilia Quignón"
-               width="1160" height="1400" loading="lazy" decoding="async">
+          <img src="imagenes/mecanicos.webp" alt="Obra de Cecilia Quignón"
+               width="1165" height="1400" loading="lazy" decoding="async">
         </div>
-        <figcaption>Rellenar</figcaption>
+        <figcaption>Mecanicos</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.738"
               data-img="imagenes/tres-en-raya.webp"
               data-titulo="Tres en raya" data-anio="" data-tecnica="">
         <div class="marco">
@@ -561,17 +575,7 @@ img { max-width: 100%; display: block; }
         <figcaption>Tres en raya</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
-              data-img="imagenes/obra-06.webp"
-              data-titulo="Rellenar" data-anio="" data-tecnica="">
-        <div class="marco">
-          <img src="imagenes/obra-06.webp" alt="Obra de Cecilia Quignón"
-               width="1400" height="1104" loading="lazy" decoding="async">
-        </div>
-        <figcaption>Rellenar</figcaption>
-      </figure>
-
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.000"
               data-img="imagenes/banistas.webp"
               data-titulo="Bañistas" data-anio="" data-tecnica="">
         <div class="marco">
@@ -581,7 +585,7 @@ img { max-width: 100%; display: block; }
         <figcaption>Bañistas</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.000"
               data-img="imagenes/verano-en-la-piscina.webp"
               data-titulo="Verano en la piscina" data-anio="" data-tecnica="">
         <div class="marco">
@@ -591,7 +595,7 @@ img { max-width: 100%; display: block; }
         <figcaption>Verano en la piscina</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.449"
               data-img="imagenes/domingo-en-la-playa.webp"
               data-titulo="Domingo en la playa" data-anio="" data-tecnica="">
         <div class="marco">
@@ -601,7 +605,7 @@ img { max-width: 100%; display: block; }
         <figcaption>Domingo en la playa</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.354"
               data-img="imagenes/cometas.webp"
               data-titulo="Cometas" data-anio="" data-tecnica="">
         <div class="marco">
@@ -611,7 +615,7 @@ img { max-width: 100%; display: block; }
         <figcaption>Cometas</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.816"
               data-img="imagenes/nudo.webp"
               data-titulo="Nudo" data-anio="" data-tecnica="">
         <div class="marco">
@@ -621,7 +625,7 @@ img { max-width: 100%; display: block; }
         <figcaption>Nudo</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.235"
               data-img="imagenes/the-wind.webp"
               data-titulo="The wind" data-anio="" data-tecnica="">
         <div class="marco">
@@ -631,7 +635,7 @@ img { max-width: 100%; display: block; }
         <figcaption>The wind</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.980"
               data-img="imagenes/a-nuestro-ritmo.webp"
               data-titulo="A nuestro ritmo" data-anio="" data-tecnica="">
         <div class="marco">
@@ -641,64 +645,74 @@ img { max-width: 100%; display: block; }
         <figcaption>A nuestro ritmo</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.378"
               data-img="imagenes/bici.webp"
-              data-titulo="Bici" data-anio="" data-tecnica="">
+              data-titulo="S/T" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/bici.webp" alt="Obra de Cecilia Quignón"
                width="1400" height="1016" loading="lazy" decoding="async">
         </div>
-        <figcaption>Bici</figcaption>
+        <figcaption>S/T</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.390"
               data-img="imagenes/bola-amarilla.webp"
-              data-titulo="Bola amarilla" data-anio="" data-tecnica="">
+              data-titulo="S/T" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/bola-amarilla.webp" alt="Obra de Cecilia Quignón"
                width="1400" height="1007" loading="lazy" decoding="async">
         </div>
-        <figcaption>Bola amarilla</figcaption>
+        <figcaption>S/T</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.375"
               data-img="imagenes/cubo.webp"
-              data-titulo="Cubo" data-anio="" data-tecnica="">
+              data-titulo="S/T" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/cubo.webp" alt="Obra de Cecilia Quignón"
                width="1400" height="1018" loading="lazy" decoding="async">
         </div>
-        <figcaption>Cubo</figcaption>
+        <figcaption>S/T</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.390"
               data-img="imagenes/manguitos.webp"
-              data-titulo="Manguitos" data-anio="" data-tecnica="">
+              data-titulo="S/T" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/manguitos.webp" alt="Obra de Cecilia Quignón"
                width="1400" height="1007" loading="lazy" decoding="async">
         </div>
-        <figcaption>Manguitos</figcaption>
+        <figcaption>S/T</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.427"
               data-img="imagenes/sandia.webp"
-              data-titulo="Sandia" data-anio="" data-tecnica="">
+              data-titulo="S/T" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/sandia.webp" alt="Obra de Cecilia Quignón"
                width="1400" height="981" loading="lazy" decoding="async">
         </div>
-        <figcaption>Sandia</figcaption>
+        <figcaption>S/T</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0"
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.439"
               data-img="imagenes/tumbona.webp"
-              data-titulo="Tumbona" data-anio="" data-tecnica="">
+              data-titulo="S/T" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/tumbona.webp" alt="Obra de Cecilia Quignón"
                width="1400" height="973" loading="lazy" decoding="async">
         </div>
-        <figcaption>Tumbona</figcaption>
+        <figcaption>S/T</figcaption>
+      </figure>
+
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.008"
+              data-img="imagenes/reina.webp"
+              data-titulo="Reina" data-anio="" data-tecnica="">
+        <div class="marco">
+          <img src="imagenes/reina.webp" alt="Obra de Cecilia Quignón"
+               width="1400" height="1389" loading="lazy" decoding="async">
+        </div>
+        <figcaption>Reina</figcaption>
       </figure>
 
     </div>
