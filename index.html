@@ -97,7 +97,13 @@
 
   /* Separadores de puntos */
   --color-puntos:           #9b968e;
-  --color-malla:            var(--color-titulo);   /* dibujos entre grupos */
+  /* Cometa, cuerda y nino de la galeria */
+  --color-dibujo:           #3d6f92;   /* trazo de la cometa y del nino */
+  --color-cuerda:           #8a857d;
+  --color-cometa-a:         var(--color-titulo);
+  --color-cometa-b:         #f3c74f;
+  --color-nino-ropa:        #f3c74f;
+  --color-nino-piel:        #f6dcc8;
   --tam-punto:              2px;    /* grosor del punto        */
   --separacion-puntos:      9px;    /* distancia entre puntos  */
 
@@ -114,7 +120,9 @@
   --alto-mosaico:     75px;    /* alto de partida de cada fila del mosaico */
   --alto-max-obra:    200px;   /* tope: grupos de 1-2 obras no salen enormes */
   --hueco-mosaico:    14px;    /* separacion entre obras */
-  --tam-malla:        30px;    /* tamano del dibujo entre grupos */
+  --alto-malla:       clamp(64px, 17vw, 104px);   /* hueco entre grupos (por ahi cruza la cuerda) */
+  --tam-cometa:       36px;    /* ancho de la cometa junto a "Galeria" */
+  --tam-nino:         40px;    /* ancho del nino del final */
   --alto-barra:       52px;
 }
 
@@ -301,25 +309,78 @@ img { max-width: 100%; display: block; }
   gap: calc(var(--hueco-mosaico) * 1.6) var(--hueco-mosaico);
 }
 
-/* malla: separacion entre grupos, puntos con un juguete en medio */
-.malla {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: clamp(30px, 9vw, 52px) 0;
-  color: var(--color-malla);
+/* malla: hueco entre grupos por donde cruza la cuerda */
+.malla { height: var(--alto-malla); }
+
+/* --- Cometa, cuerda y nino ------------------------------------
+   La cuerda es un SVG que ocupa toda la seccion, por detras de
+   las obras; el JS (D) calcula su recorrido. */
+#galeria { position: relative; }
+
+.cuerda {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.malla-icono {
-  width: var(--tam-malla);
-  height: var(--tam-malla);
-  flex: none;
+.cuerda path {
   fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
+  stroke: var(--color-cuerda);
+  stroke-width: 1.3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+#galeria .separador,
+.galeria,
+.final-cometa { position: relative; z-index: 1; }
+
+.cometa {
+  flex: none;
+  width: var(--tam-cometa);
+  margin-right: -6px;
+  transform: translateY(-38%) rotate(-16deg);
+}
+
+.cometa svg,
+.nino { display: block; width: 100%; height: auto; overflow: visible; }
+
+.cometa path,
+.nino path,
+.nino circle {
+  stroke: var(--color-dibujo);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cometa .vela-a  { fill: var(--color-cometa-a); stroke: none; }
+.cometa .vela-b  { fill: var(--color-cometa-b); stroke: none; }
+.cometa .borde,
+.cometa .cola    { fill: none; }
+.cometa .lazo    { fill: var(--color-cometa-a); stroke-width: .8; }
+.cometa .nudo,
+.nino .mano      { fill: var(--color-nino-piel); }
+.cometa .nudo    { stroke: none; }
+
+.final-cometa {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: clamp(28px, 8vw, 48px);
+}
+
+.nino { width: var(--tam-nino); }
+.nino .piel   { fill: none; stroke-width: 2.6; stroke: var(--color-dibujo); }
+.nino .pierna { fill: none; stroke-width: 2.4; }
+.nino .ropa   { fill: var(--color-nino-ropa); }
+.nino .cabeza { fill: var(--color-nino-piel); }
+.nino .pelo   { fill: var(--color-dibujo); }
+.nino .mano   { stroke-width: 1.2; }
 
 .obra {
   --r: 1;
@@ -496,6 +557,8 @@ img { max-width: 100%; display: block; }
   :root {
     --alto-mosaico:  165px;
     --alto-max-obra: 300px;
+    --tam-cometa:    46px;
+    --tam-nino:      52px;
     --hueco-mosaico: 26px;
   }
 }
@@ -532,8 +595,22 @@ img { max-width: 100%; display: block; }
   <!-- ===== 2. Galeria ===== -->
   <section id="galeria" class="contenedor">
 
+    <!-- Cuerda de la cometa: la dibuja el JS (D) segun donde caigan
+         los huecos entre grupos en cada pantalla. -->
+    <svg class="cuerda" aria-hidden="true" focusable="false"><path d=""/></svg>
+
     <div class="separador">
       <span class="puntos" aria-hidden="true"></span>
+      <span class="cometa" aria-hidden="true">
+        <svg viewBox="0 0 40 52">
+          <path class="cola" d="M20 42c-5 3 5 5 0 8"/>
+          <path class="lazo" d="M15.5 44.5l3.5 1.6-3.5 1.6zM22.5 44.5l-3.5 1.6 3.5 1.6z"/>
+          <path class="vela-a" d="M20 2l16 14H20zM20 42L4 16h16z"/>
+          <path class="vela-b" d="M20 2L4 16h16zM20 42l16-26H20z"/>
+          <path class="borde" d="M20 2l16 14-16 26L4 16zM20 2v40M4 16h32"/>
+          <circle class="nudo" cx="20" cy="16" r=".5"/>
+        </svg>
+      </span>
       <h2>Galería</h2>
       <span class="puntos" aria-hidden="true"></span>
     </div>
@@ -546,34 +623,8 @@ img { max-width: 100%; display: block; }
          mover un bloque <figure>: el mosaico se recoloca solo. Al anadir
          una, poner en style="--r: ..." el ancho/alto de su foto.
          Cada <div class="galeria"> es un grupo de obras que siempre se ven
-         juntas; entre grupo y grupo va una <div class="malla"> con un dibujo
-         (rayuela, cometa, flotador, pelota, cubo: ver los <symbol>). -->
-    <!-- Dibujos de las mallas (se definen una vez y se usan con <use>) -->
-    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-      <defs>
-        <symbol id="j-rayuela" viewBox="0 0 40 40">
-          <path d="M16 39h8v-7h-8zM12 32h8v-7h-8zM20 32h8v-7h-8zM16 25h8v-7h-8zM12 18h8v-7h-8zM20 18h8v-7h-8zM12 11a8 8 0 0 1 16 0"/>
-        </symbol>
-        <symbol id="j-cometa" viewBox="0 0 40 40">
-          <path d="M20 2l10 11-10 15-10-15zM20 2v26M10 13h20"/>
-          <path d="M20 28c-4 2 4 5 0 7s2 4 0 4"/>
-        </symbol>
-        <symbol id="j-flotador" viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="6.5"/>
-          <path d="M15.4 15.4l-5.5-5.5M24.6 15.4l5.5-5.5M15.4 24.6l-5.5 5.5M24.6 24.6l5.5 5.5"/>
-        </symbol>
-        <symbol id="j-pelota" viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="15"/>
-          <path d="M20 5c-7 6-7 24 0 30M20 5c7 6 7 24 0 30M5.5 16c9 4 20 4 29 0"/>
-        </symbol>
-        <symbol id="j-cubo" viewBox="0 0 40 40">
-          <path d="M9 15h22l-3 21H12zM8 15h24"/>
-          <path d="M10 15c0-12 20-12 20 0"/>
-          <path d="M10.5 24h19"/>
-        </symbol>
-      </defs>
-    </svg>
-
+         juntas; entre grupo y grupo va una <div class="malla"> vacia: es el
+         hueco por donde cruza la cuerda de la cometa haciendo bucles. -->
     <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.346"
@@ -608,11 +659,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true">
-      <span class="puntos"></span>
-      <svg class="malla-icono"><use href="#j-rayuela"/></svg>
-      <span class="puntos"></span>
-    </div>
+    <div class="malla" aria-hidden="true"></div>
 
     <div class="galeria">
 
@@ -658,11 +705,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true">
-      <span class="puntos"></span>
-      <svg class="malla-icono"><use href="#j-cometa"/></svg>
-      <span class="puntos"></span>
-    </div>
+    <div class="malla" aria-hidden="true"></div>
 
     <div class="galeria">
 
@@ -698,11 +741,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true">
-      <span class="puntos"></span>
-      <svg class="malla-icono"><use href="#j-flotador"/></svg>
-      <span class="puntos"></span>
-    </div>
+    <div class="malla" aria-hidden="true"></div>
 
     <div class="galeria">
 
@@ -718,11 +757,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true">
-      <span class="puntos"></span>
-      <svg class="malla-icono"><use href="#j-pelota"/></svg>
-      <span class="puntos"></span>
-    </div>
+    <div class="malla" aria-hidden="true"></div>
 
     <div class="galeria">
 
@@ -748,11 +783,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true">
-      <span class="puntos"></span>
-      <svg class="malla-icono"><use href="#j-cubo"/></svg>
-      <span class="puntos"></span>
-    </div>
+    <div class="malla" aria-hidden="true"></div>
 
     <div class="galeria">
 
@@ -816,6 +847,18 @@ img { max-width: 100%; display: block; }
         <figcaption>S/T</figcaption>
       </figure>
 
+    </div>
+
+    <!-- Final de la cuerda: nino que sujeta la cometa -->
+    <div class="final-cometa" aria-hidden="true">
+      <svg class="nino" viewBox="0 0 40 64">
+        <path class="piel" d="M24 27l6-17M14 28l-5 9"/>
+        <path class="pierna" d="M16.5 40l-1 15M22.5 40l1 15M15.5 55h-3M23.5 55h3"/>
+        <path class="ropa" d="M13 25h12l2.5 15h-17z"/>
+        <circle class="cabeza" cx="19" cy="15" r="7"/>
+        <path class="pelo" d="M12.2 14a7 7 0 0 1 13.6-1.5c-3 .4-6-.6-8-2.6-1 2-3 3.6-5.6 4.1z"/>
+        <circle class="mano" cx="30" cy="9" r="1.6"/>
+      </svg>
     </div>
   </section>
 
@@ -977,6 +1020,129 @@ img { max-width: 100%; display: block; }
   document.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape' && !caja.hidden) { ocultar(); }
   });
+})();
+
+/* ============================================================
+   D. Cuerda de la cometa
+   Sale de la cometa de "Galeria", baja por un margen y en cada
+   hueco entre grupos (.malla) cruza al otro lado haciendo bucles,
+   hasta la mano del nino del final. Se recalcula si cambia el
+   tamano de la pagina, porque los grupos caen en otro sitio.
+   ============================================================ */
+(function () {
+  var seccion = document.getElementById('galeria');
+  if (!seccion) return;
+  var trazo = seccion.querySelector('.cuerda path');
+  var nudo  = seccion.querySelector('.cometa .nudo');
+  var mano  = seccion.querySelector('.nino .mano');
+  if (!trazo || !nudo || !mano) return;
+
+  // vueltas que da la cuerda en cada hueco (se repite si hay mas huecos)
+  var VUELTAS = [1, 2, 3, 2, 1];
+  // donde caen los bucles dentro de cada hueco (0 = un lado, 1 = el otro)
+  var SITIO   = [0.55, 0.45, 0.5, 0.6, 0.4];
+
+  function punto(el, base) {
+    var r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top };
+  }
+
+  // bajada por un lateral, con una ondulacion suave
+  function bajar(pts, x, y1, y2) {
+    var tramos = Math.max(1, Math.round((y2 - y1) / 90));
+    for (var i = 1; i <= tramos; i++) {
+      pts.push({ x: x + (i % 2 ? 3 : -3), y: y1 + (y2 - y1) * i / tramos });
+    }
+  }
+
+  // cruce de lado a lado con bucles (curva trocoide: un muelle estirado)
+  function cruzar(pts, xa, xb, y, radio, vueltas, sitio) {
+    var dir = xb > xa ? 1 : -1;
+    var ancho = radio * 1.4 * vueltas;
+    var ini = xa + (xb - xa) * sitio - dir * ancho / 2;
+    pts.push({ x: (xa + ini) / 2, y: y + 4 });
+    var avance = ancho / (vueltas * 2 * Math.PI);
+    var n = vueltas * 28;
+    for (var i = 0; i <= n; i++) {
+      var t = i / n * vueltas * 2 * Math.PI;
+      pts.push({ x: ini + dir * (avance * t - radio * Math.sin(t)),
+                 y: y - radio * (1 - Math.cos(t)) });
+    }
+    pts.push({ x: (ini + dir * ancho + xb) / 2, y: y + 4 });
+    pts.push({ x: xb, y: y });
+  }
+
+  // une los puntos con curvas suaves (Catmull-Rom -> Bezier)
+  function curva(p) {
+    var d = 'M' + p[0].x.toFixed(1) + ' ' + p[0].y.toFixed(1);
+    for (var i = 0; i < p.length - 1; i++) {
+      var a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c;
+      d += 'C' + (b.x + (c.x - a.x) / 6).toFixed(1) + ' ' + (b.y + (c.y - a.y) / 6).toFixed(1) +
+           ' ' + (c.x - (e.x - b.x) / 6).toFixed(1) + ' ' + (c.y - (e.y - b.y) / 6).toFixed(1) +
+           ' ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1);
+    }
+    return d;
+  }
+
+  function dibujar() {
+    var base = seccion.getBoundingClientRect();
+    var estilo = getComputedStyle(seccion);
+    var izq = parseFloat(estilo.paddingLeft);
+    var der = base.width - parseFloat(estilo.paddingRight);
+    // carril por el que baja la cuerda: dentro del margen, o algo mas
+    // fuera si la pantalla es ancha y hay sitio
+    var aire = Math.max(9, Math.min((base.left + izq) / 2, 48));
+    var lado = [izq - aire, der + aire];
+
+    var inicio = punto(nudo, base);
+    var fin = punto(mano, base);
+    var grupos = seccion.querySelectorAll('.galeria');
+    var huecos = seccion.querySelectorAll('.malla');
+    if (!grupos.length) return;
+
+    var pts = [inicio];
+    var y0 = grupos[0].getBoundingClientRect().top - base.top - 14;
+    pts.push({ x: (inicio.x + lado[0]) / 2, y: (inicio.y + y0) / 2 + 6 });
+    pts.push({ x: lado[0], y: y0 });
+    var aqui = 0, y = y0;
+
+    huecos.forEach(function (h, i) {
+      var r = h.getBoundingClientRect();
+      var radio = Math.min(r.height * 0.3, 30);
+      var linea = r.top - base.top + r.height / 2 + radio;
+      bajar(pts, lado[aqui], y, linea);
+      cruzar(pts, lado[aqui], lado[1 - aqui], linea, radio,
+             VUELTAS[i % VUELTAS.length], SITIO[i % SITIO.length]);
+      aqui = 1 - aqui;
+      y = linea;
+    });
+
+    var yFinal = fin.y - 34;
+    if (aqui === 0) {
+      // si acaba en el lado izquierdo, cruza por debajo del ultimo grupo
+      bajar(pts, lado[0], y, yFinal);
+      pts.push({ x: (lado[0] + lado[1]) / 2, y: yFinal + 10 });
+      pts.push({ x: lado[1], y: yFinal });
+    } else {
+      bajar(pts, lado[1], y, yFinal);
+    }
+    pts.push({ x: (lado[1] + fin.x) / 2 + 4, y: (yFinal + fin.y) / 2 });
+    pts.push(fin);
+
+    trazo.setAttribute('d', curva(pts));
+  }
+
+  var pendiente = false;
+  function pedir() {
+    if (pendiente) return;
+    pendiente = true;
+    requestAnimationFrame(function () { pendiente = false; dibujar(); });
+  }
+
+  if ('ResizeObserver' in window) { new ResizeObserver(pedir).observe(seccion); }
+  window.addEventListener('resize', pedir);
+  window.addEventListener('load', pedir);
+  pedir();
 })();
 </script>
 
