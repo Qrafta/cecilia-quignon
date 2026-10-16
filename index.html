@@ -97,6 +97,7 @@
 
   /* Separadores de puntos */
   --color-puntos:           #9b968e;
+  --color-malla:            var(--color-titulo);   /* dibujos entre grupos */
   --tam-punto:              2px;    /* grosor del punto        */
   --separacion-puntos:      9px;    /* distancia entre puntos  */
 
@@ -110,8 +111,10 @@
   /* --- Medidas ----------------------------------------------------- */
   --ancho-maximo:     980px;   /* ancho maximo del contenido en pantalla grande */
   --margen-lateral:   22px;    /* aire a izquierda y derecha */
-  --alto-mosaico:     105px;   /* alto aproximado de cada fila del mosaico */
+  --alto-mosaico:     75px;    /* alto de partida de cada fila del mosaico */
+  --alto-max-obra:    200px;   /* tope: grupos de 1-2 obras no salen enormes */
   --hueco-mosaico:    14px;    /* separacion entre obras */
+  --tam-malla:        30px;    /* tamano del dibujo entre grupos */
   --alto-barra:       52px;
 }
 
@@ -288,22 +291,40 @@ img { max-width: 100%; display: block; }
    Cada <figure> lleva style="--r: ancho/alto" de su foto: es lo
    que reparte el ancho de la fila. Alto de fila y separacion, en
    --alto-mosaico y --hueco-mosaico.
+   Cada .galeria es un grupo: sus obras llenan el ancho, pero sin
+   pasar de --alto-max-obra; si sobra sitio, la fila se centra.
    ============================================================ */
 .galeria {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: calc(var(--hueco-mosaico) * 1.6) var(--hueco-mosaico);
 }
 
-/* hueco invisible al final: la ultima fila no se estira de mas */
-.galeria::after {
-  content: "";
-  flex-grow: 999;
+/* malla: separacion entre grupos, puntos con un juguete en medio */
+.malla {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: clamp(30px, 9vw, 52px) 0;
+  color: var(--color-malla);
+}
+
+.malla-icono {
+  width: var(--tam-malla);
+  height: var(--tam-malla);
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .obra {
   --r: 1;
   flex: var(--r) 1 calc(var(--r) * var(--alto-mosaico));
+  max-width: calc(var(--r) * var(--alto-max-obra));
   min-width: 0;
   margin: 0;
   text-align: center;
@@ -474,6 +495,7 @@ img { max-width: 100%; display: block; }
 @media (min-width: 720px) {
   :root {
     --alto-mosaico:  165px;
+    --alto-max-obra: 300px;
     --hueco-mosaico: 26px;
   }
 }
@@ -522,7 +544,36 @@ img { max-width: 100%; display: block; }
          data-anio y data-tecnica, y poner el titulo en el alt de la imagen.
          Para anadir, quitar o mover obras basta con copiar, borrar o
          mover un bloque <figure>: el mosaico se recoloca solo. Al anadir
-         una, poner en style="--r: ..." el ancho/alto de su foto. -->
+         una, poner en style="--r: ..." el ancho/alto de su foto.
+         Cada <div class="galeria"> es un grupo de obras que siempre se ven
+         juntas; entre grupo y grupo va una <div class="malla"> con un dibujo
+         (rayuela, cometa, flotador, pelota, cubo: ver los <symbol>). -->
+    <!-- Dibujos de las mallas (se definen una vez y se usan con <use>) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="j-rayuela" viewBox="0 0 40 40">
+          <path d="M16 39h8v-7h-8zM12 32h8v-7h-8zM20 32h8v-7h-8zM16 25h8v-7h-8zM12 18h8v-7h-8zM20 18h8v-7h-8zM12 11a8 8 0 0 1 16 0"/>
+        </symbol>
+        <symbol id="j-cometa" viewBox="0 0 40 40">
+          <path d="M20 2l10 11-10 15-10-15zM20 2v26M10 13h20"/>
+          <path d="M20 28c-4 2 4 5 0 7s2 4 0 4"/>
+        </symbol>
+        <symbol id="j-flotador" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="6.5"/>
+          <path d="M15.4 15.4l-5.5-5.5M24.6 15.4l5.5-5.5M15.4 24.6l-5.5 5.5M24.6 24.6l5.5 5.5"/>
+        </symbol>
+        <symbol id="j-pelota" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="15"/>
+          <path d="M20 5c-7 6-7 24 0 30M20 5c7 6 7 24 0 30M5.5 16c9 4 20 4 29 0"/>
+        </symbol>
+        <symbol id="j-cubo" viewBox="0 0 40 40">
+          <path d="M9 15h22l-3 21H12zM8 15h24"/>
+          <path d="M10 15c0-12 20-12 20 0"/>
+          <path d="M10.5 24h19"/>
+        </symbol>
+      </defs>
+    </svg>
+
     <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.346"
@@ -555,6 +606,16 @@ img { max-width: 100%; display: block; }
         <figcaption>Bañistas</figcaption>
       </figure>
 
+    </div>
+
+    <div class="malla" aria-hidden="true">
+      <span class="puntos"></span>
+      <svg class="malla-icono"><use href="#j-rayuela"/></svg>
+      <span class="puntos"></span>
+    </div>
+
+    <div class="galeria">
+
       <figure class="obra" role="button" tabindex="0" style="--r: 0.832"
               data-img="imagenes/mecanicos.webp"
               data-titulo="Mecanicos" data-anio="" data-tecnica="">
@@ -585,6 +646,26 @@ img { max-width: 100%; display: block; }
         <figcaption>Nudo</figcaption>
       </figure>
 
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.354"
+              data-img="imagenes/cometas.webp"
+              data-titulo="Cometas" data-anio="" data-tecnica="">
+        <div class="marco">
+          <img src="imagenes/cometas.webp" alt="Obra de Cecilia Quignón"
+               width="1400" height="1034" loading="lazy" decoding="async">
+        </div>
+        <figcaption>Cometas</figcaption>
+      </figure>
+
+    </div>
+
+    <div class="malla" aria-hidden="true">
+      <span class="puntos"></span>
+      <svg class="malla-icono"><use href="#j-cometa"/></svg>
+      <span class="puntos"></span>
+    </div>
+
+    <div class="galeria">
+
       <figure class="obra" role="button" tabindex="0" style="--r: 1.449"
               data-img="imagenes/domingo-en-la-playa.webp"
               data-titulo="Domingo en la playa" data-anio="" data-tecnica="">
@@ -597,12 +678,12 @@ img { max-width: 100%; display: block; }
 
       <figure class="obra" role="button" tabindex="0" style="--r: 0.719"
               data-img="imagenes/mas-alto.webp"
-              data-titulo="Mas alto!" data-anio="" data-tecnica="">
+              data-titulo="Más alto!" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/mas-alto.webp" alt="Obra de Cecilia Quignón"
                width="1007" height="1400" loading="lazy" decoding="async">
         </div>
-        <figcaption>Mas alto!</figcaption>
+        <figcaption>Más alto!</figcaption>
       </figure>
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.235"
@@ -614,6 +695,36 @@ img { max-width: 100%; display: block; }
         </div>
         <figcaption>The wind</figcaption>
       </figure>
+
+    </div>
+
+    <div class="malla" aria-hidden="true">
+      <span class="puntos"></span>
+      <svg class="malla-icono"><use href="#j-flotador"/></svg>
+      <span class="puntos"></span>
+    </div>
+
+    <div class="galeria">
+
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.750"
+              data-img="imagenes/refugio.webp"
+              data-titulo="Refugio" data-anio="" data-tecnica="">
+        <div class="marco">
+          <img src="imagenes/refugio.webp" alt="Obra de Cecilia Quignón"
+               width="896" height="1195" loading="lazy" decoding="async">
+        </div>
+        <figcaption>Refugio</figcaption>
+      </figure>
+
+    </div>
+
+    <div class="malla" aria-hidden="true">
+      <span class="puntos"></span>
+      <svg class="malla-icono"><use href="#j-pelota"/></svg>
+      <span class="puntos"></span>
+    </div>
+
+    <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 0.980"
               data-img="imagenes/a-nuestro-ritmo.webp"
@@ -635,25 +746,15 @@ img { max-width: 100%; display: block; }
         <figcaption>Reina</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0" style="--r: 0.750"
-              data-img="imagenes/refugio.webp"
-              data-titulo="Refugio" data-anio="" data-tecnica="">
-        <div class="marco">
-          <img src="imagenes/refugio.webp" alt="Obra de Cecilia Quignón"
-               width="896" height="1195" loading="lazy" decoding="async">
-        </div>
-        <figcaption>Refugio</figcaption>
-      </figure>
+    </div>
 
-      <figure class="obra" role="button" tabindex="0" style="--r: 1.354"
-              data-img="imagenes/cometas.webp"
-              data-titulo="Cometas" data-anio="" data-tecnica="">
-        <div class="marco">
-          <img src="imagenes/cometas.webp" alt="Obra de Cecilia Quignón"
-               width="1400" height="1034" loading="lazy" decoding="async">
-        </div>
-        <figcaption>Cometas</figcaption>
-      </figure>
+    <div class="malla" aria-hidden="true">
+      <span class="puntos"></span>
+      <svg class="malla-icono"><use href="#j-cubo"/></svg>
+      <span class="puntos"></span>
+    </div>
+
+    <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.378"
               data-img="imagenes/bici.webp"
