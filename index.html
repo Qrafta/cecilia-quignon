@@ -115,7 +115,7 @@
   --alto-max-obra:    200px;   /* tope: grupos de 1-2 obras no salen enormes */
   --hueco-mosaico:    14px;    /* separacion entre obras */
   --aire-malla:       clamp(22px, 6vw, 36px);    /* aire encima y debajo de cada rayuela */
-  --tam-rayuela:      30px;    /* lado de cada casilla de la rayuela */
+  --tam-rayuela:      40px;    /* alto de la rayuela entre grupos */
   --alto-barra:       52px;
 }
 
@@ -302,25 +302,20 @@ img { max-width: 100%; display: block; }
   gap: calc(var(--hueco-mosaico) * 1.6) var(--hueco-mosaico);
 }
 
-/* malla: hueco entre grupos con una rayuela tumbada dentro.
-   La rayuela la dibuja el JS (D) a la medida del ancho. */
+/* malla: hueco entre grupos con una rayuela pequena en medio */
 .malla {
   padding: var(--aire-malla) 0;
   display: flex;
-  align-items: center;
+  justify-content: center;
 }
 
 .malla svg {
   display: block;
-  width: 100%;
-  overflow: visible;
-}
-
-.malla svg path {
+  width: calc(var(--tam-rayuela) * 0.524);   /* proporcion del dibujo: 22 x 42 */
+  height: var(--tam-rayuela);
   fill: none;
   stroke: var(--color-rayuela);
-  stroke-width: 1.5;
-  stroke-linecap: round;
+  stroke-width: 1.1;
   stroke-linejoin: round;
 }
 
@@ -499,7 +494,7 @@ img { max-width: 100%; display: block; }
   :root {
     --alto-mosaico:  165px;
     --alto-max-obra: 300px;
-    --tam-rayuela:   36px;
+    --tam-rayuela:   48px;
     --hueco-mosaico: 26px;
   }
 }
@@ -550,8 +545,15 @@ img { max-width: 100%; display: block; }
          mover un bloque <figure>: el mosaico se recoloca solo. Al anadir
          una, poner en style="--r: ..." el ancho/alto de su foto.
          Cada <div class="galeria"> es un grupo de obras que siempre se ven
-         juntas; entre grupo y grupo va una <div class="malla">: el JS (D) dibuja
-         dentro una rayuela tumbada. -->
+         juntas; entre grupo y grupo va una <div class="malla"> con una rayuela
+         pequena en medio (el <symbol id="rayuela">). -->
+    <!-- Rayuela de las mallas: se define una vez y se usa con <use> -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <symbol id="rayuela" viewBox="-1 -1 22 42">
+        <path d="M5 0h10v10H5zM0 10h20v10H0zM10 10v10M5 20h10v10H5zM5 30h10v10H5z"/>
+      </symbol>
+    </svg>
+
     <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.346"
@@ -586,7 +588,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
 
     <div class="galeria">
 
@@ -632,7 +634,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
 
     <div class="galeria">
 
@@ -668,7 +670,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
 
     <div class="galeria">
 
@@ -684,7 +686,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
 
     <div class="galeria">
 
@@ -710,7 +712,7 @@ img { max-width: 100%; display: block; }
 
     </div>
 
-    <div class="malla" aria-hidden="true"></div>
+    <div class="malla" aria-hidden="true"><svg><use href="#rayuela"/></svg></div>
 
     <div class="galeria">
 
@@ -935,71 +937,6 @@ img { max-width: 100%; display: block; }
   document.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape' && !caja.hidden) { ocultar(); }
   });
-})();
-
-/* ============================================================
-   D. Rayuelas entre grupos
-   En cada .malla se dibuja una rayuela tumbada y centrada: el
-   semicirculo a la izquierda y luego las casillas de PATRON
-   (simples y dobles). En pantallas estrechas se encoge para
-   caber. Tamano en --tam-rayuela, color en --color-rayuela.
-   ============================================================ */
-(function () {
-  var mallas = document.querySelectorAll('.malla');
-  if (!mallas.length) return;
-  var NS = 'http://www.w3.org/2000/svg';
-
-  // casillas de izquierda a derecha despues del semicirculo: 1 = simple, 2 = doble
-  var PATRON = [2, 1, 1, 2, 1, 2, 1, 1, 2];
-
-  function rayuela(ancho, lado) {
-    var n = PATRON.length;
-    var c = Math.min(lado, (ancho - 1) / (n + 0.5));   // lado de casilla; mas pequena si no cabe
-    var alto = 2 * c, medio = alto / 2;
-    var x = (ancho - c * (n + 0.5)) / 2 + c / 2, d = '';   // centrada
-
-    // semicirculo de "cielo", pegado a la primera casilla
-    var h0 = PATRON[0] === 2 ? c : c / 2;
-    d += 'M' + x + ' ' + (medio - h0) + 'A' + h0 + ' ' + h0 + ' 0 0 0 ' + x + ' ' + (medio + h0);
-    PATRON.forEach(function (tipo) {
-      var y1 = tipo === 2 ? 0.5 : medio - c / 2, y2 = tipo === 2 ? alto - 0.5 : medio + c / 2;
-      d += 'M' + x + ' ' + y1 + 'H' + (x + c) + 'V' + y2 + 'H' + x + 'Z';
-      if (tipo === 2) d += 'M' + x + ' ' + medio + 'H' + (x + c);
-      x += c;
-    });
-    return { d: d, alto: alto };
-  }
-
-  function dibujar() {
-    var lado = parseFloat(getComputedStyle(document.documentElement)
-                          .getPropertyValue('--tam-rayuela')) || 20;
-    mallas.forEach(function (m) {
-      var ancho = m.clientWidth;
-      if (!ancho) return;
-      var r = rayuela(ancho, lado);
-      var svg = m.querySelector('svg');
-      if (!svg) {
-        svg = document.createElementNS(NS, 'svg');
-        svg.setAttribute('aria-hidden', 'true');
-        svg.appendChild(document.createElementNS(NS, 'path'));
-        m.appendChild(svg);
-      }
-      svg.setAttribute('viewBox', '0 0 ' + ancho + ' ' + (r.alto + 1));
-      svg.setAttribute('height', r.alto + 1);
-      svg.firstChild.setAttribute('d', r.d);
-    });
-  }
-
-  var pendiente = false;
-  function pedir() {
-    if (pendiente) return;
-    pendiente = true;
-    requestAnimationFrame(function () { pendiente = false; dibujar(); });
-  }
-
-  if ('ResizeObserver' in window) { new ResizeObserver(pedir).observe(mallas[0]); }
-  window.addEventListener('resize', pedir);
-  pedir();
 })();
 </script>
 
