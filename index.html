@@ -97,6 +97,13 @@
 
   /* Separadores de puntos */
   --color-puntos:           #9b968e;
+  /* Cometa, cuerda y nino de la galeria */
+  --color-dibujo:           #3d6f92;   /* trazo de la cometa y del nino */
+  --color-cuerda:           #8a857d;
+  --color-cometa-a:         var(--color-titulo);
+  --color-cometa-b:         #f3c74f;
+  --color-nino-ropa:        #f3c74f;
+  --color-nino-piel:        #f6dcc8;
   --tam-punto:              2px;    /* grosor del punto        */
   --separacion-puntos:      9px;    /* distancia entre puntos  */
 
@@ -110,8 +117,12 @@
   /* --- Medidas ----------------------------------------------------- */
   --ancho-maximo:     980px;   /* ancho maximo del contenido en pantalla grande */
   --margen-lateral:   22px;    /* aire a izquierda y derecha */
-  --alto-mosaico:     105px;   /* alto aproximado de cada fila del mosaico */
+  --alto-mosaico:     75px;    /* alto de partida de cada fila del mosaico */
+  --alto-max-obra:    200px;   /* tope: grupos de 1-2 obras no salen enormes */
   --hueco-mosaico:    14px;    /* separacion entre obras */
+  --alto-malla:       clamp(64px, 17vw, 104px);   /* hueco entre grupos (por ahi cruza la cuerda) */
+  --tam-cometa:       36px;    /* ancho de la cometa junto a "Galeria" */
+  --tam-nino:         40px;    /* ancho del nino del final */
   --alto-barra:       52px;
 }
 
@@ -288,22 +299,93 @@ img { max-width: 100%; display: block; }
    Cada <figure> lleva style="--r: ancho/alto" de su foto: es lo
    que reparte el ancho de la fila. Alto de fila y separacion, en
    --alto-mosaico y --hueco-mosaico.
+   Cada .galeria es un grupo: sus obras llenan el ancho, pero sin
+   pasar de --alto-max-obra; si sobra sitio, la fila se centra.
    ============================================================ */
 .galeria {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: calc(var(--hueco-mosaico) * 1.6) var(--hueco-mosaico);
 }
 
-/* hueco invisible al final: la ultima fila no se estira de mas */
-.galeria::after {
-  content: "";
-  flex-grow: 999;
+/* malla: hueco entre grupos por donde cruza la cuerda */
+.malla { height: var(--alto-malla); }
+
+/* --- Cometa, cuerda y nino ------------------------------------
+   La cuerda es un SVG que ocupa toda la seccion, por detras de
+   las obras; el JS (D) calcula su recorrido. */
+#galeria { position: relative; }
+
+.cuerda {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
 }
+
+.cuerda path {
+  fill: none;
+  stroke: var(--color-cuerda);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#galeria .separador,
+.galeria,
+.final-cometa { position: relative; z-index: 1; }
+
+.cometa {
+  flex: none;
+  width: var(--tam-cometa);
+  margin-right: -4px;
+  transform: translateY(-34%) rotate(-12deg);
+}
+
+.cometa svg,
+.nino { display: block; width: 100%; height: auto; overflow: visible; }
+
+.cometa path,
+.nino path,
+.nino circle {
+  stroke: var(--color-dibujo);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cometa .vela-a  { fill: var(--color-cometa-a); stroke: none; }
+.cometa .vela-b  { fill: var(--color-cometa-b); stroke: none; }
+.cometa .borde,
+.cometa .cola    { fill: none; }
+.cometa .lazo    { fill: var(--color-cometa-a); stroke-width: .8; }
+.cometa .nudo,
+.nino .mano      { fill: var(--color-nino-piel); }
+.cometa .nudo    { stroke: none; }
+
+.final-cometa {
+  display: flex;
+  justify-content: flex-end;   /* el JS lo pasa a la izquierda si la cuerda llega por ahi */
+  padding-top: clamp(28px, 8vw, 48px);
+}
+
+.nino { width: var(--tam-nino); }
+.nino .piel   { fill: none; stroke-width: 2.6; stroke: var(--color-dibujo); }
+.nino .pierna { fill: none; stroke-width: 2.4; }
+.nino .ropa   { fill: var(--color-nino-ropa); }
+.nino .cabeza { fill: var(--color-nino-piel); }
+.nino .pelo   { fill: var(--color-dibujo); }
+.nino .mano   { stroke-width: 1.2; }
 
 .obra {
   --r: 1;
   flex: var(--r) 1 calc(var(--r) * var(--alto-mosaico));
+  max-width: calc(var(--r) * var(--alto-max-obra));
   min-width: 0;
   margin: 0;
   text-align: center;
@@ -474,6 +556,9 @@ img { max-width: 100%; display: block; }
 @media (min-width: 720px) {
   :root {
     --alto-mosaico:  165px;
+    --alto-max-obra: 300px;
+    --tam-cometa:    46px;
+    --tam-nino:      52px;
     --hueco-mosaico: 26px;
   }
 }
@@ -510,7 +595,21 @@ img { max-width: 100%; display: block; }
   <!-- ===== 2. Galeria ===== -->
   <section id="galeria" class="contenedor">
 
+    <!-- Cuerda de la cometa: la dibuja el JS (D) segun donde caigan
+         los huecos entre grupos en cada pantalla. -->
+    <svg class="cuerda" aria-hidden="true" focusable="false"><path d=""/></svg>
+
     <div class="separador">
+      <span class="cometa" aria-hidden="true">
+        <svg viewBox="0 0 40 52">
+          <path class="cola" d="M20 42c-5 3 5 5 0 8"/>
+          <path class="lazo" d="M15.5 44.5l3.5 1.6-3.5 1.6zM22.5 44.5l-3.5 1.6 3.5 1.6z"/>
+          <path class="vela-a" d="M20 2l16 14H20zM20 42L4 16h16z"/>
+          <path class="vela-b" d="M20 2L4 16h16zM20 42l16-26H20z"/>
+          <path class="borde" d="M20 2l16 14-16 26L4 16zM20 2v40M4 16h32"/>
+          <circle class="nudo" cx="20" cy="16" r=".5"/>
+        </svg>
+      </span>
       <span class="puntos" aria-hidden="true"></span>
       <h2>Galería</h2>
       <span class="puntos" aria-hidden="true"></span>
@@ -522,7 +621,10 @@ img { max-width: 100%; display: block; }
          data-anio y data-tecnica, y poner el titulo en el alt de la imagen.
          Para anadir, quitar o mover obras basta con copiar, borrar o
          mover un bloque <figure>: el mosaico se recoloca solo. Al anadir
-         una, poner en style="--r: ..." el ancho/alto de su foto. -->
+         una, poner en style="--r: ..." el ancho/alto de su foto.
+         Cada <div class="galeria"> es un grupo de obras que siempre se ven
+         juntas; entre grupo y grupo va una <div class="malla"> vacia: es el
+         hueco por donde cruza la cuerda de la cometa haciendo bucles. -->
     <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.346"
@@ -555,6 +657,12 @@ img { max-width: 100%; display: block; }
         <figcaption>Bañistas</figcaption>
       </figure>
 
+    </div>
+
+    <div class="malla" aria-hidden="true"></div>
+
+    <div class="galeria">
+
       <figure class="obra" role="button" tabindex="0" style="--r: 0.832"
               data-img="imagenes/mecanicos.webp"
               data-titulo="Mecanicos" data-anio="" data-tecnica="">
@@ -585,6 +693,22 @@ img { max-width: 100%; display: block; }
         <figcaption>Nudo</figcaption>
       </figure>
 
+      <figure class="obra" role="button" tabindex="0" style="--r: 1.354"
+              data-img="imagenes/cometas.webp"
+              data-titulo="Cometas" data-anio="" data-tecnica="">
+        <div class="marco">
+          <img src="imagenes/cometas.webp" alt="Obra de Cecilia Quignón"
+               width="1400" height="1034" loading="lazy" decoding="async">
+        </div>
+        <figcaption>Cometas</figcaption>
+      </figure>
+
+    </div>
+
+    <div class="malla" aria-hidden="true"></div>
+
+    <div class="galeria">
+
       <figure class="obra" role="button" tabindex="0" style="--r: 1.449"
               data-img="imagenes/domingo-en-la-playa.webp"
               data-titulo="Domingo en la playa" data-anio="" data-tecnica="">
@@ -597,12 +721,12 @@ img { max-width: 100%; display: block; }
 
       <figure class="obra" role="button" tabindex="0" style="--r: 0.719"
               data-img="imagenes/mas-alto.webp"
-              data-titulo="Mas alto!" data-anio="" data-tecnica="">
+              data-titulo="Más alto!" data-anio="" data-tecnica="">
         <div class="marco">
           <img src="imagenes/mas-alto.webp" alt="Obra de Cecilia Quignón"
                width="1007" height="1400" loading="lazy" decoding="async">
         </div>
-        <figcaption>Mas alto!</figcaption>
+        <figcaption>Más alto!</figcaption>
       </figure>
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.235"
@@ -614,6 +738,28 @@ img { max-width: 100%; display: block; }
         </div>
         <figcaption>The wind</figcaption>
       </figure>
+
+    </div>
+
+    <div class="malla" aria-hidden="true"></div>
+
+    <div class="galeria">
+
+      <figure class="obra" role="button" tabindex="0" style="--r: 0.750"
+              data-img="imagenes/refugio.webp"
+              data-titulo="Refugio" data-anio="" data-tecnica="">
+        <div class="marco">
+          <img src="imagenes/refugio.webp" alt="Obra de Cecilia Quignón"
+               width="896" height="1195" loading="lazy" decoding="async">
+        </div>
+        <figcaption>Refugio</figcaption>
+      </figure>
+
+    </div>
+
+    <div class="malla" aria-hidden="true"></div>
+
+    <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 0.980"
               data-img="imagenes/a-nuestro-ritmo.webp"
@@ -635,25 +781,11 @@ img { max-width: 100%; display: block; }
         <figcaption>Reina</figcaption>
       </figure>
 
-      <figure class="obra" role="button" tabindex="0" style="--r: 0.750"
-              data-img="imagenes/refugio.webp"
-              data-titulo="Refugio" data-anio="" data-tecnica="">
-        <div class="marco">
-          <img src="imagenes/refugio.webp" alt="Obra de Cecilia Quignón"
-               width="896" height="1195" loading="lazy" decoding="async">
-        </div>
-        <figcaption>Refugio</figcaption>
-      </figure>
+    </div>
 
-      <figure class="obra" role="button" tabindex="0" style="--r: 1.354"
-              data-img="imagenes/cometas.webp"
-              data-titulo="Cometas" data-anio="" data-tecnica="">
-        <div class="marco">
-          <img src="imagenes/cometas.webp" alt="Obra de Cecilia Quignón"
-               width="1400" height="1034" loading="lazy" decoding="async">
-        </div>
-        <figcaption>Cometas</figcaption>
-      </figure>
+    <div class="malla" aria-hidden="true"></div>
+
+    <div class="galeria">
 
       <figure class="obra" role="button" tabindex="0" style="--r: 1.378"
               data-img="imagenes/bici.webp"
@@ -715,6 +847,18 @@ img { max-width: 100%; display: block; }
         <figcaption>S/T</figcaption>
       </figure>
 
+    </div>
+
+    <!-- Final de la cuerda: nino que sujeta la cometa -->
+    <div class="final-cometa" aria-hidden="true">
+      <svg class="nino" viewBox="0 0 40 64">
+        <path class="piel" d="M24 27l6-17M14 28l-5 9"/>
+        <path class="pierna" d="M16.5 40l-1 15M22.5 40l1 15M15.5 55h-3M23.5 55h3"/>
+        <path class="ropa" d="M13 25h12l2.5 15h-17z"/>
+        <circle class="cabeza" cx="19" cy="15" r="7"/>
+        <path class="pelo" d="M12.2 14a7 7 0 0 1 13.6-1.5c-3 .4-6-.6-8-2.6-1 2-3 3.6-5.6 4.1z"/>
+        <circle class="mano" cx="30" cy="9" r="1.6"/>
+      </svg>
     </div>
   </section>
 
@@ -876,6 +1020,180 @@ img { max-width: 100%; display: block; }
   document.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape' && !caja.hidden) { ocultar(); }
   });
+})();
+
+/* ============================================================
+   D. Cuerda de la cometa
+   Sigue el boceto de Argi: sale de la cometa (esquina de
+   "Galeria"), cruza por encima del primer grupo, rodea el grupo
+   por un lado con una curva grande, vuelve a cruzar por debajo,
+   rodea el siguiente por el otro lado... y al final llega a la
+   mano del nino. Toda la cuerda va rizada, como un cable de
+   telefono: primero se calcula el recorrido liso y luego se le
+   enrollan los rizos a lo largo. Se recalcula si cambia el
+   tamano de la pagina.
+   ============================================================ */
+(function () {
+  var seccion = document.getElementById('galeria');
+  if (!seccion) return;
+  var trazo = seccion.querySelector('.cuerda path');
+  var nudo  = seccion.querySelector('.cometa .nudo');
+  var mano  = seccion.querySelector('.nino .mano');
+  var final = seccion.querySelector('.final-cometa');
+  if (!trazo || !nudo || !mano || !final) return;
+
+  var RIZO_RADIO = 7.5;   // tamano de cada rizo (px)
+  var RIZO_PASO  = 23;    // distancia entre rizos (px)
+  var SUAVE      = 28;    // px lisos al salir de la cometa y al llegar a la mano
+  // lado hacia el que se enroscan los rizos en el tramo que se esta dibujando:
+  // se cambia en cada vuelta para que siempre queden hacia arriba en los
+  // cruces y hacia fuera en las curvas (nunca hacia las obras)
+  var lado = 1;
+
+  function centro(el, base) {
+    var r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top };
+  }
+
+  // curva Bezier cubica muestreada en puntos
+  function bezier(pts, a, b, c, d, n) {
+    for (var i = 1; i <= n; i++) {
+      var t = i / n, u = 1 - t;
+      pts.push({ x: u*u*u*a.x + 3*u*u*t*b.x + 3*u*t*t*c.x + t*t*t*d.x,
+                 y: u*u*u*a.y + 3*u*u*t*b.y + 3*u*t*t*c.y + t*t*t*d.y, lado: lado });
+    }
+  }
+
+  // tramo recto con una ondulacion suave, para que no parezca hecho con regla
+  function recta(pts, xa, xb, y) {
+    var n = Math.max(2, Math.round(Math.abs(xb - xa) / 6));
+    for (var i = 1; i <= n; i++) {
+      var x = xa + (xb - xa) * i / n;
+      pts.push({ x: x, y: y + 2.5 * Math.sin(x / 47) * Math.sin(Math.PI * i / n), lado: lado });
+    }
+  }
+
+  // curva grande que rodea un grupo por un lado: de (x, y1) a (x, y2)
+  // llegando hasta el carril x = carril
+  function rodear(pts, x, y1, y2, carril) {
+    var c = x + (carril - x) / 0.75;   // asi la curva toca justo el carril
+    bezier(pts, { x: x, y: y1 }, { x: c, y: y1 }, { x: c, y: y2 }, { x: x, y: y2 }, 60);
+  }
+
+  // reparte el recorrido en puntos a 1 px de distancia
+  function remuestrear(p) {
+    var largos = [0];
+    for (var i = 1; i < p.length; i++) {
+      largos.push(largos[i - 1] + Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y));
+    }
+    var total = largos[largos.length - 1], salida = [], j = 1;
+    for (var s = 0; s <= total; s += 1) {
+      while (j < p.length - 1 && largos[j] < s) j++;
+      var tramo = largos[j] - largos[j - 1] || 1, f = (s - largos[j - 1]) / tramo;
+      salida.push({ x: p[j - 1].x + (p[j].x - p[j - 1].x) * f,
+                    y: p[j - 1].y + (p[j].y - p[j - 1].y) * f, lado: p[j].lado });
+    }
+    return salida;
+  }
+
+  // enrolla los rizos a lo largo del recorrido (curva trocoide)
+  function rizar(p) {
+    var n = p.length, salida = [];
+    function en(i) { return p[Math.max(0, Math.min(n - 1, Math.round(i)))]; }
+    // donde cambia el lado: ahi el rizo se encoge para que no de un salto
+    var cambios = [];
+    for (var c = 1; c < n; c++) { if (p[c].lado !== p[c - 1].lado) cambios.push(c); }
+    var cerca = new Array(n).fill(Infinity);
+    cambios.forEach(function (c) {
+      for (var k = Math.max(0, c - RIZO_PASO); k < Math.min(n, c + RIZO_PASO); k++) {
+        cerca[k] = Math.min(cerca[k], Math.abs(k - c));
+      }
+    });
+    for (var s = 0; s < n; s += 1) {
+      var t = s / RIZO_PASO * 2 * Math.PI;
+      var r = RIZO_RADIO * Math.min(1, s / SUAVE, (n - 1 - s) / SUAVE, cerca[s] / RIZO_PASO);
+      var a = en(s - 3), b = en(s + 3);
+      var dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+      var tx = dx / l, ty = dy / l;           // hacia donde avanza
+      var nx = ty * p[s].lado, ny = -tx * p[s].lado;   // perpendicular, hacia fuera
+      var q = en(s - r * Math.sin(t));
+      var h = r * (1 - Math.cos(t));
+      salida.push({ x: q.x + nx * h, y: q.y + ny * h });
+    }
+    return salida;
+  }
+
+  function dibujar() {
+    var base = seccion.getBoundingClientRect();
+    var estilo = getComputedStyle(seccion);
+    var izq = parseFloat(estilo.paddingLeft);
+    var der = base.width - parseFloat(estilo.paddingRight);
+    var grupos = seccion.querySelectorAll('.galeria');
+    var huecos = seccion.querySelectorAll('.malla');
+    var cabecera = seccion.querySelector('.separador');
+    if (!grupos.length || !cabecera) return;
+
+    // carriles de las curvas: dentro del margen, o algo mas fuera si hay sitio
+    var aire = Math.max(9, Math.min((base.left + izq) / 2, 48));
+    var carril = [izq - aire + RIZO_RADIO, der + aire - RIZO_RADIO];
+    var meter = Math.min(46, (der - izq) * 0.09);   // donde empiezan/acaban los cruces
+    var borde = [izq + meter, der - meter];
+
+    // alturas de los cruces: encima del primer grupo, cada hueco, y el final
+    var alturas = [];
+    var cab = cabecera.getBoundingClientRect(), g0 = grupos[0].getBoundingClientRect();
+    alturas.push((cab.bottom + g0.top) / 2 - base.top + RIZO_RADIO);
+    huecos.forEach(function (h) { alturas.push(centro(h, base).y + RIZO_RADIO); });
+
+    // el nino se pone en el lado por el que acaba llegando la cuerda
+    // (los cruces pares van de izquierda a derecha; el del nino es el siguiente)
+    var llegaPorDerecha = alturas.length % 2 === 0;
+    final.style.justifyContent = llegaPorDerecha ? 'flex-end' : 'flex-start';
+
+    var inicio = centro(nudo, base), fin = centro(mano, base);
+    alturas.push(fin.y);
+
+    lado = 1;
+    var pts = [{ x: inicio.x, y: inicio.y, lado: lado }];
+    // de la cometa baja al primer cruce
+    bezier(pts, inicio, { x: inicio.x, y: alturas[0] },
+           { x: inicio.x + 10, y: alturas[0] }, { x: borde[0], y: alturas[0] }, 30);
+
+    for (var i = 0; i < alturas.length; i++) {
+      var y = alturas[i];
+      var desde = i % 2 === 0 ? borde[0] : borde[1];
+      var hasta = i % 2 === 0 ? borde[1] : borde[0];
+      var ultimo = i === alturas.length - 1;
+      if (ultimo) { hasta = fin.x - (llegaPorDerecha ? 26 : -26); }
+      lado = i % 2 === 0 ? 1 : -1;
+      recta(pts, desde, hasta, y);
+      if (ultimo) {
+        bezier(pts, pts[pts.length - 1], { x: (hasta + fin.x) / 2, y: y },
+               { x: fin.x, y: (y + fin.y) / 2 }, fin, 12);
+      } else {
+        rodear(pts, hasta, y, alturas[i + 1], i % 2 === 0 ? carril[1] : carril[0]);
+      }
+    }
+
+    var rizada = rizar(remuestrear(pts));
+    var d = 'M' + rizada[0].x.toFixed(1) + ' ' + rizada[0].y.toFixed(1);
+    for (var k = 1; k < rizada.length; k++) {
+      d += 'L' + rizada[k].x.toFixed(1) + ' ' + rizada[k].y.toFixed(1);
+    }
+    trazo.setAttribute('d', d);
+  }
+
+  var pendiente = false;
+  function pedir() {
+    if (pendiente) return;
+    pendiente = true;
+    requestAnimationFrame(function () { pendiente = false; dibujar(); });
+  }
+
+  if ('ResizeObserver' in window) { new ResizeObserver(pedir).observe(seccion); }
+  window.addEventListener('resize', pedir);
+  window.addEventListener('load', pedir);
+  pedir();
 })();
 </script>
 
